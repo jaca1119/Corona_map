@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Corona map</title>
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+   crossorigin=""></script>
+
+   <link rel="stylesheet" href="/dist/css/leaflet.extra-markers.min.css">
+    <script src="/dist/js/leaflet.extra-markers.min.js"></script>
+
+   <style>
+       body {
+           margin: 0;
+           position: relative;
+       }
+
+       .info {
+           position: absolute;
+           top: 100px;
+           left: 100px;
+           z-index: 999;
+           background-color:azure;
+       }
+       
+       .center {
+           margin-top: 7px !important;
+       }
+
+       .botInfo {
+            height: 0;
+            width: 100%;
+            position: fixed;
+            z-index: 1000;
+            bottom: 0;
+            background-color: beige;
+            overflow-x: hidden;
+            transition: 0.5s;
+        }
+        .bottom {
+            display: none;
+            height: 5vh;
+        }
+
+        .botInfo .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+            cursor: pointer;
+        }
+
+       #mapid { height: 100vh; }
+
+        
+        @media (max-width: 600px) {
+            .bottom {
+                display: block;
+            }
+
+            .info {
+                display: none;
+            }
+
+            #mapid { height: 95vh; }
+        }
+
+
+   </style>
+</head>
+<body>
+    <div id="info" class="info text"></div>
+    <div id="mapid"></div>
+    <div id="botInfo" class="botInfo">
+        <div class="closebtn" onclick="closePanel()">&times;</div>
+        <div class="text"></div>
+    </div>
+    <div class="bottom">
+        <span style="cursor: pointer;" onclick="openPanel()">&#9776; Informacje</span>
+    </div>
+    
+
+    <script th:inline="javascript">
+        let coordinates = {};
+
+        coordinates["dolnośląskie"] = [51.10, 17.03];
+        coordinates["kujawsko-pomorskie"] = [53.11, 18];
+        coordinates["lubelskie"] = [51.25, 22.56];
+        coordinates["lubuskie"] = [51.93, 15.50];
+        coordinates["łódzkie"] = [51.75, 19.46];
+        coordinates["małopolskie"] = [50.06, 19.93];
+        coordinates["mazowieckie"] = [52.22, 21.01];
+        coordinates["opolskie"] = [50.67, 17.92];
+        coordinates["podkarpackie"] = [50.04, 21.99];
+        coordinates["pomorskie"] = [54.35, 18.64];
+        coordinates["śląskie"] = [50.25, 19.02];
+        coordinates["świętokrzyskie"] = [50.87, 20.62];
+        coordinates["warmińsko-mazurskie"] = [53.77, 20.49];
+        coordinates["wielkopolskie"] = [52.40, 16.92];
+        coordinates["zachodniopomorskie"] = [53.42, 14.55];
+        coordinates["podlaskie"] = [53.13, 23.16];
+
+        let data = [[${data}]];
+        let points = [[${points}]];
+        let lastUpdate = [[${update}]];
+        let lastWorldUpdate = [[${worldUpdate}]];
+        let polishRecovered = [[${recovered}]];
+        let worldInfected = [[${worldInfected}]];
+        let worldRecovered = [[${worldRecovered}]];
+        let worldDeaths = [[${worldDeaths}]];
+        
+        var map = L.map('mapid').setView([52.21, 19.134422], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        if (data[0].Województwo === "Cała Polska") {
+            let info = `Cała polska:\n
+                Liczba zarażonych: ${data[0].Liczba}.
+                Liczba zgonów: ${data[0]["Liczba zgonów"]}.
+                Liczba wyleczonych: ${polishRecovered}.
+                Ostatnia aktualizacja ${lastUpdate}.\n
+                Cały świat:\n
+                Liczba zarażonych: ${worldInfected}.
+                Liczba zgonów: ${worldDeaths}.
+                Liczba wyleczonych: ${worldRecovered}.
+                Ostatnia aktualizacja ${lastWorldUpdate}.`;
+            
+            document.getElementsByClassName("text")[0].innerText += info;
+            document.getElementsByClassName("text")[1].innerText += info;
+        }
+
+        data.filter(element => element.Województwo in coordinates)
+            .forEach(element => {
+                let info = `Województwo: ${element.Województwo}.\nLiczba zarażonych: ${element.Liczba}.\nLiczba zgonów: ${element["Liczba zgonów"]}`;
+
+                let marker = L.ExtraMarkers.icon({
+                    icon: 'fa-number',
+                    extraClasses: 'center',
+                    number: element.Liczba,
+                    markerColor: 'red',
+                    shape: 'square',
+                    prefix: 'fa'
+                });
+
+                L.marker(coordinates[element.Województwo], {icon: marker}).addTo(map)
+                .bindPopup(info);
+            });
+
+        points.forEach(point => {
+            let confirmedInfected = point.confirmedInfected;
+
+            if (confirmedInfected !== 0 && point.country.name !== "Poland")
+            {
+                let info = `Państwo: ${point.country.name}.\nLiczba zarażonych: ${confirmedInfected}.\nLiczba zgonów: ${point.confirmedDeaths}.\nLiczba wyleczonych: ${point.confirmedRecovered}`;
+
+                let marker = L.ExtraMarkers.icon({
+                        icon: 'fa-number',
+                        extraClasses: 'center',
+                        number: confirmedInfected,
+                        markerColor: 'red',
+                        shape: 'square',
+                        prefix: 'fa'
+                    });
+
+                L.marker([point.country.lat, point.country.lng], {icon: marker}).addTo(map)
+                .bindPopup(info);
+            }
+        });
+
+    </script>
+    <script>
+        function openPanel() {
+            document.getElementById("botInfo").style.height = "250px";
+        }
+
+        function closePanel() {
+            document.getElementById("botInfo").style.height = "0";
+        } 
+    </script>
+</body>
+</html>
