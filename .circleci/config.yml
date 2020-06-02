@@ -8,7 +8,7 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     environment:
-      IMAGE_NAME=CORONA_MAP
+      IMAGE_NAME=corona_map
     steps:
       - checkout
       - run:
