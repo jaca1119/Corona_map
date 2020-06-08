@@ -33,7 +33,7 @@ jobs:
             - $FINGERPRINT
       - run:
           name: Execute script
-          command: ssh $USER@$HOST "$COMMAND $IMAGE_NAME:$TAG $IMAGE_NAME 5000 5000"
+          command: ssh $USER@$HOST "$COMMAND $IMAGE_NAME:$TAG $IMAGE_NAME"
 
 workflows:
   maven_test:
